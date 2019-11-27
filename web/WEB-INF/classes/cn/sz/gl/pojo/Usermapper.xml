@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.sz.gl.dao.UsersDao">
+	<!-- 查询
+		这里指定了实体类和表的映射关系,默认情况下，如果表中字段的名字和实体类属性名一致，是能够自动封装的;
+	
+		id : 自定义，将来通过namespace.id的方式，来调用对应的sql语句;
+		resultType : 查询的时候，用来封装查询结果,表示查询的结果封装成哪个实体类对象
+	 -->
+	<select id="findAll" resultType="cn.sz.gl.pojo.Users">
+		select id,name,password from users
+	</select>
+	
+	<!-- parameterType ：表示传入参数的类型 -->
+	<select id="findById" parameterType="java.lang.Integer" resultType="cn.sz.gl.pojo.Users" >
+		select id,name,password from users where id=#{id}
+	</select>
+	
+	<!-- 增加 -->
+	<insert id="insert" parameterType="cn.sz.gl.pojo.Users" >
+		insert into users(id,name,password)
+		values(users_seq.nextval, #{name,jdbcType=VARCHAR}, #{password,jdbcType=VARCHAR})
+	</insert>
+	
+	
+	<!-- 修改
+		这里，通过设置全局参数jdbcTypeForNull,或者设置jdbcType的方式，能够解决字段为空的异常,让程序能够正常执行；
+		但是传参为空的时候，会清空对应的字段;
+		要想解决，需要借助于动态sql
+	 -->
+	<update id="update" parameterType="cn.sz.gl.pojo.Users" >
+		update users
+		   set 
+			 name=#{name},
+			 password=#{password}
+		 where id=#{id}
+	</update>
+	
+	<!-- 删除 -->
+	<delete id="delete" parameterType="cn.sz.gl.pojo.Users" >
+		delete from users where id = #{id}
+	</delete>
+	
+	<!-- 模糊查询和分页
+		sql语句中，如果有特殊符号，那么：
+		1.	整个sql，加上cdata，表示在解析xml的时候，整段语句当成普通文本输出，不做解析;
+		2.  对于特殊符号，可以使用转义字符来替换
+	 -->
+	<!-- <select id="findsplit" parameterType="java.util.Map" resultType="cn.sz.gl.pojo.Users" >
+		 <![CDATA[
+		 select empno, ename, job, mgr, hiredate, sal, comm, deptno from
+ (select rownum rn,empno, ename, job, mgr, hiredate, sal, comm, deptno from 
+ (select empno, ename, job, mgr, hiredate, sal, comm, deptno from emp where ${column} like '%${kw}%' order by sal desc) 
+ where rownum<=#{end}) temp where temp.rn>#{start}
+		 ]]> 
+	</select> -->
+	
+	<select id="findPageAll" parameterType="java.util.Map" resultType="cn.sz.gl.pojo.Users" >
+		 select id,name,password  from
+ (select rownum rn,id,name,password from 
+ (select id,name,password  from users where ${column} like '%${keywords}%' order by id asc) 
+ where rownum&lt;=#{end}) temp where temp.rn&gt;#{start}
+	</select>
+	
+	
+	<!-- 
+	$和#传参时的区别：
+	1.#在传参的时候，会自动拼接单引号；$不能拼接单引号;
+	2.$传参时，一般不支持jdbcType指定类型的写法;#则可以;
+	3.$一般用于在sql中拼接表名，结果排序，模糊查询等操作;其他正常参数传递一般使用#
+	
+	 -->
+	 <select id="getCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+	 	select count(1) from users where ${column} like '%${keywords}%'
+	 </select>
+	 
+	 <select id="login" parameterType="java.util.Map" resultType="cn.sz.gl.pojo.Users">
+	 	select id,name,password from users where name=#{name} and password=#{password}
+	 </select>
+	 
+		
+	<delete id="delBatchIds" parameterType="java.util.List">
+		delete from users 
+			<where>
+				id in
+				<foreach collection="list" item="id" index="index" separator="," open="(" close=")">
+					#{id}
+				</foreach>
+			</where>
+	
+	</delete>
+</mapper>
